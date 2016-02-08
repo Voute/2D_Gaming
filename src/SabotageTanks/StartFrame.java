@@ -9,6 +9,11 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -37,6 +42,8 @@ public class StartFrame extends JFrame implements ActionListener
                       ,ipField
                       ;
     
+    private Game game;
+    
     ConnectionManager connectManager;
     
     public StartFrame(String title)
@@ -53,7 +60,12 @@ public class StartFrame extends JFrame implements ActionListener
         
         ipField = new JTextField();
         ipField.setColumns(13);
-        ipField.setText("192.168.16.5");
+        try {
+            ipField.setText(Inet4Address.getLocalHost().getHostAddress());
+        } catch (UnknownHostException ex) {
+            Logger.getLogger(StartFrame.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
         
         serverRadio = new JRadioButton("server");
         serverRadio.setSelected(true);
@@ -79,12 +91,15 @@ public class StartFrame extends JFrame implements ActionListener
     @Override
     public void actionPerformed(ActionEvent e)
     {   
+        game = new Game();
+        
         connectManager = new ConnectionManager(serverRadio.isSelected(),
                                                ipField.getText(),
                                                Integer.valueOf(portField.getText()),
-                                               new Game()
+                                               game
                                                );
         setVisible(false);
+        game.start();
     }
     
 }

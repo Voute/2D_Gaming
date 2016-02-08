@@ -34,6 +34,7 @@ public class ConnectionManager {
                 server = new Server(port);
                 
             } catch (IOException ex) {
+                Logger.getLogger(ConnectionManager.class.getName()).log(Level.SEVERE, null, ex);
                 JOptionPane.showMessageDialog(null, "Не удалось создать сервер", "Ошибка подключения", JOptionPane.ERROR_MESSAGE);
             }
             

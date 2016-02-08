@@ -46,7 +46,7 @@ import SabotageTanks.GameObject;
             this.y = Yaxis + HEIGHT / 2;
             
             area = new TankArea(Xaxis, Yaxis);
-            move(0,0);
+            move(new TankMovement());
             
             XbarrelTip = getX();
             YbarrelTip = Yaxis;
@@ -83,7 +83,7 @@ import SabotageTanks.GameObject;
             rotation = Math.PI / 2;
             x = 10 + id * 5 + id * 40;
             y = 30;
-            move(0,0);
+            move(new TankMovement());
             XbarrelTip = getX();
             YbarrelTip = 30;
         }
@@ -92,11 +92,11 @@ import SabotageTanks.GameObject;
             return damaged;
         }
         // перемещает квадрат на новые координаты
-        public void move(double movementShift, double rotationShift)
+        public void move(TankMovement movement)
         {
-            rotation += rotationShift;
-            x += area.calculateXshift(rotation, movementShift);
-            y += area.calculateYshift(rotation, movementShift);
+            rotation += movement.rotationShift;
+            x += area.calculateXshift(rotation, movement.movementShift);
+            y += area.calculateYshift(rotation, movement.movementShift);
             area.calculateNewLocation();
         }
         // перекрывают ли границы квадрата указанные границы другого квадрата
@@ -104,9 +104,9 @@ import SabotageTanks.GameObject;
         {
             return area.assumeNewLocation(movementShift, rotationShift);
         }
-        public boolean isCrossing(double movementShift, double rotationShift, TankArea testingArea)
+        public boolean isCrossing(TankMovement movement, TankArea testingArea)
         {
-            TankArea assumedTankArea = area.assumeNewLocation(movementShift, rotationShift);
+            TankArea assumedTankArea = area.assumeNewLocation(movement.movementShift, movement.rotationShift);
             
                 return assumedTankArea.contains(testingArea.xpoints, testingArea.ypoints) ||
                        testingArea.contains(assumedTankArea.xpoints, assumedTankArea.ypoints)

@@ -25,67 +25,71 @@ import javax.swing.JApplet;
  *
  * @author YTokmakov
  */
-public class Brush {
+public class DrawManager {
     
     private int gameWidth,
                 gameHeight;
-    private Control control;
-    private ArrayList<Tank> tankList;
-    private ArrayList<Shell> shellList;
-    private ArrayList<BurstingTank> burstList = new ArrayList<BurstingTank>();
+    private TankControl control;
+    private BattleField battleField;
     
-    public Brush(int gameWidth,
-                 int gameHeight,
-                 ArrayList<Shell> shellList,
-                 ArrayList<Tank> tankList,
-                 Control control
+    public DrawManager(int gameWidth,
+                       int gameHeight,
+                       BattleField battleField,
+                       TankControl control
                 )
     {
         this.control = control;
-        this.tankList = tankList;
-        this.shellList = shellList;
+        this.battleField = battleField;
         this.gameWidth = gameWidth;
         this.gameHeight = gameHeight;
     }
     
+    synchronized public void drawField(Graphics2D graph)
+    {
+        
+        drawTanks(graph);
+//        graph.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
+//        ((AlphaComposite)gr.getComposite()).derive(0.1f);
+//        gr.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);        
+        drawShells(graph);
+        drawBursts(graph);
+        //draw coordinates
+        graph.setColor(Color.red);
+        try
+        {
+//            ArrayList<GameObject> nearObjects = getNearObjects(control.getFocusedTank());
+//            String s = "";
+//            for (GameObject obj: nearObjects)
+//            {
+//                s += obj.getName() + " ";
+//            }
+//            graph.drawString(s, WIDTH - 150, HEIGHT - 60);
+            graph.drawString("speed: " + control.getFocusedTank().getSpeed(), gameWidth - 70, gameHeight - 60);            
+            graph.drawString("x: " + control.getFocusedTank().getX(), gameWidth - 50, gameHeight - 50);
+            graph.drawString("y: " + control.getFocusedTank().getY(), gameWidth - 50, gameHeight - 40);
+            graph.drawString("To restore tanks press wheel mouse button", 10, 10);
+        } catch (NullPointerException ex) { }
+        //draw coordinates
+        
+    }
+    
     synchronized public void drawShells(Graphics2D graph)       // рисуем снаряды
     {
-        // клонируем массив снарядов для прорисовки
-        ArrayList<Shell> shellsListToDraw = (ArrayList<Shell>)shellList.clone();
+        ArrayList<Shell> shells = battleField.getShellManager().getShellsToDraw(gameWidth, gameHeight, battleField);
         
-        if (!shellsListToDraw.isEmpty())
+        if (shells != null)
         {
-            // массив для снарядов, которые вышли за границы фрейма
-            ArrayList<Shell> removeList = new ArrayList<Shell>();
-            for (Shell bullet: shellsListToDraw)
+            for (Shell shell:shells)
             {
-                if (bullet.nextX() <= gameWidth && bullet.nextY() <= gameHeight)
-                {
-                    for (Tank tank: tankList)
-                    {
-                        if ( tank.containsXY(bullet.getX(), bullet.getY()) &&
-                             tank.id != bullet.parent   &&
-                             !tank.isDamaged()
-                           )
-                        {
-                            removeList.add(bullet);
-                            burstList.add(tank.setDamaged());
-                            break;
-                        }
-                    }
-                    graph.setColor(bullet.color);
-                    graph.fillOval(bullet.getXdraw(), bullet.getYdraw(), bullet.DIAMETER, bullet.DIAMETER);
-                } else {
-                    // добавляем к удалению из массива
-                    removeList.add(bullet);
-                }
+                graph.setColor(shell.color);
+                graph.fillOval(shell.getXdraw(), shell.getYdraw(), shell.DIAMETER, shell.DIAMETER);
             }
-            // удаляем из массива снарядов вышедшие за границы экрана
-            shellList.removeAll(removeList);  
         }
     }
     synchronized public void drawBursts(Graphics2D graph)
     {
+        ArrayList<BurstingTank> burstList = battleField.getBurstingTanks();
+        
         for (BurstingTank burst: burstList)
         {
             try
@@ -104,7 +108,7 @@ public class Brush {
     }
     synchronized public void drawTanks(Graphics2D graph)     // рисуем танки
     {
-        for (Tank tank: tankList)
+        for (Tank tank: battleField.getTanks())
         {
             if (!tank.isDamaged())
             {

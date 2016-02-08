@@ -26,43 +26,23 @@ public class Game extends Canvas implements Runnable
     private static final String ARTICLE = "2d game";        // заголовок окна
     private static JFrame frame;        // окно
     
-//    private Tank focusedTank;     // квадрат в фокусе
-    private ArrayList<Tank> tankList;     // массив квадратов
-    private ArrayList<Shell> shellList;        // массив снарядов
-    private ArrayList<ArrayList<GameObject>> objectsArrays;
-    
-    private Control control;
-    private Brush brush;
-    
-//  цвета квадратов    
-    private final Color[] TANK_COLORS = {Color.GRAY,
-                                         Color.YELLOW,
-                                         Color.BLUE,
-                                         Color.MAGENTA,
-                                         Color.ORANGE,
-                                         Color.CYAN,
-                                         Color.pink
-                                         };
+    private TankControl control;
+    private DrawManager drawManager;
+    private BattleField battleField;
     
     private boolean win = false;        // успешная парковка в парковку
     
     public Game()
     {
-        tankList = new ArrayList<Tank>();
-        for (int i = 0; i <= 6; i++)
-        {
-            tankList.add(new Tank(TANK_COLORS[i], 10 + i * 5 + i * 40, 30, i));
-        }
-        shellList = new ArrayList<Shell>();
+        battleField = new BattleField();
         
 //        objectsArrays = new ArrayList<>();
 //        objectsArrays.add(shellList);
         
-        control = new Control(this,tankList,shellList);
-        brush = new Brush(WIDTH,
+        control = new TankControl(this, battleField);
+        drawManager = new DrawManager(WIDTH,
                           HEIGHT,
-                          shellList,
-                          tankList,
+                          battleField,
                           control);
         
         frame = new JFrame(ARTICLE);
@@ -128,25 +108,6 @@ public class Game extends Canvas implements Runnable
             {
                 System.out.println("framesRendered: " + frames);
                 
-                //tests
-//                String s = "";
-//                for (Tank tank: tankList)
-//                {
-//                    int[] xx = tank.Xget();
-//                    int[] yy = tank.Yget();
-//                    s += "tank" + tank.id + ": ";
-//                    System.out.println(s);
-//                    System.out.println(tank.getX() + "." + tank.getY());
-//                    s = "";
-//                    for (int i = 0; i < xx.length; i++)
-//                    {
-//                        s += "x" + i + "=" + xx[i] + "; y" + i + "=" + yy[i] + ";";
-//                        System.out.println(s);
-//                        s = "";
-//                    }
-//                }
-                //tests
-                
                 frames = 0;
                 lastClockTime = newClockTime;
             }
@@ -170,29 +131,7 @@ public class Game extends Canvas implements Runnable
         graph.setStroke(new BasicStroke(2));
         graph.drawString("Park the box!", 200, 200);
         control.calculateFocusedTankMove();
-        brush.drawTanks(graph);
-//        graph.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
-//        ((AlphaComposite)gr.getComposite()).derive(0.1f);
-//        gr.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);        
-        brush.drawShells(graph);
-        brush.drawBursts(graph);
-        //draw coordinates
-        graph.setColor(Color.red);
-        try
-        {
-            ArrayList<GameObject> nearObjects = getNearObjects(control.getFocusedTank());
-            String s = "";
-            for (GameObject obj: nearObjects)
-            {
-                s += obj.getName() + " ";
-            }
-            graph.drawString(s, WIDTH - 150, HEIGHT - 60);
-            graph.drawString("speed: " + control.getFocusedTank().getSpeed(), WIDTH - 70, HEIGHT - 60);            
-            graph.drawString("x: " + control.getFocusedTank().getX(), WIDTH - 50, HEIGHT - 50);
-            graph.drawString("y: " + control.getFocusedTank().getY(), WIDTH - 50, HEIGHT - 40);
-            graph.drawString("To restore tanks press wheel mouse button", 10, 10);
-        } catch (NullPointerException ex) { }
-        //draw coordinates
+        drawManager.drawField(graph);
         graph.dispose();
         bs.show();
     }
@@ -200,7 +139,7 @@ public class Game extends Canvas implements Runnable
     {
         ArrayList<GameObject> returnArray = new ArrayList<>();
         
-        for (Tank tank: tankList)
+        for (Tank tank: battleField.getTanks())
         {
             if (tank != testingObject &&
                 Relations.areNear(testingObject, tank)

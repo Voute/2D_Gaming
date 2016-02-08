@@ -18,7 +18,7 @@ import SabotageTanks.GameObject;
         public final int DIAMETER = RADIUS * 2;
         public final int speed = 2;        // скорость полета: пиксель/кадр
         public final Color color = Color.DARK_GRAY;
-        public final int parent;
+        public final int tankId;
         private double x;       // координата по оси Х
         private double y;       // координата по оси У
         private double Xstep;       // величина изменения по оси Х в кадр
@@ -30,13 +30,13 @@ import SabotageTanks.GameObject;
                      int straightY2,
                      int startX,        // позиция вылета
                      int startY,
-                     int parent
+                     int tankId
                      ) throws Exception
         {
             x = startX;
             y = startY;
             
-            this.parent = parent;
+            this.tankId = tankId;
             
             // проверяем, не в центр ли объекта в фокусе сделан выстрел
             if (straightY1 == straightY2 && straightX1 == straightX2)

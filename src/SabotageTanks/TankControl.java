@@ -6,19 +6,17 @@
 package SabotageTanks;
 
 import java.awt.event.KeyEvent;
-import java.awt.Polygon;
 import java.awt.event.KeyListener;
 import SabotageTanks.Tanks.Tank;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.Point;
-import java.util.ArrayList;
-import SabotageTanks.Tanks.Shell;
+import SabotageTanks.Tanks.TankMovement;
 /**
  *
  * @author YTokmakov
  */
-public class Control {
+public class TankControl {
     
     private boolean upPressed,
                     downPressed,
@@ -26,17 +24,13 @@ public class Control {
                     rightPressed;
 //    private MouseMotionListener mouseMovingHandler;
     private Tank focusedTank;
-    private final ArrayList<Tank> tankList;
-    private final ArrayList<Shell> shellList;    
+    private BattleField battleField;
     private Game game;
     
-    Control(Game game,
-            ArrayList<Tank> tankList,
-            ArrayList<Shell> shellList)
+    TankControl(Game game, BattleField battleField)
     {
         this.game = game;
-        this.tankList = tankList;
-        this.shellList = shellList;
+        this.battleField = battleField;
     }
     
     public KeyListener getKeyListener()      // обработчик клавиш клавы
@@ -95,34 +89,16 @@ public class Control {
             {
                 if (e.getButton() == 1)     // левая кнопка мыши (фокус)
                 {
-                    focusedTank = null;
-//                    mouseMovingHandler = null;
-                    for (Tank tank: tankList) {        // проверяем, какой квадрат в точке клика
-                        if (tank.containsXY(e.getX(), e.getY()))
-                        {
-                            focusedTank = tank;
-                            break;
-                        }
-                    }     
-                } else if (e.getButton() == 3 &&        // правая кнопка мыши (выстрел)
+                    focusedTank = battleField.click(e.getX(), e.getY());   
+                }
+                else if (e.getButton() == 3 &&        // правая кнопка мыши (выстрел)
                            focusedTank != null)
                 {   // создаем снаряд
-                    try {
-                        shellList.add(new Shell(focusedTank.getX(),
-                                                 e.getX(),
-                                                 focusedTank.getY(),
-                                                 e.getY(),
-                                                 focusedTank.XbarrelTip,
-                                                 focusedTank.YbarrelTip,
-                                                 focusedTank.id
-                        ));
-                    } catch (Exception ex) { }      // если выстрел был совершен в центре квадрата
-                } else if (e.getButton() == 2)
+                    battleField.getShellManager().makeShell(focusedTank, e.getX(), e.getY());
+                }
+                else if (e.getButton() == 2)        // средняя кнопка мыши
                 {
-                    for (Tank tank: tankList)
-                    {
-                        tank.restore();
-                    }
+                    battleField.restoreTanks();
                 }
             }
             @Override
@@ -159,56 +135,39 @@ public class Control {
     }
     public void calculateFocusedTankMove()
     {
-        double movementShift = 0.0D;     // перемещение вперед-назад
-        
-        double rotationShift = 0;
-        boolean noMove = false;     // если движение запрещено
+        TankMovement movement = new TankMovement();
         
         if (focusedTank != null)
         {
             if (getRightPressed())      // поворот вправо
             {
-                rotationShift += focusedTank.rotationSpeed;
+                movement.rotationShift += focusedTank.rotationSpeed;
             }
             if (getLeftPressed())       // поворот влево
             {
-                rotationShift -= focusedTank.rotationSpeed;                
+                movement.rotationShift -= focusedTank.rotationSpeed;                
             } 
             if (getUpPressed())     // движение вперед
             {
-                movementShift -= focusedTank.speed();
+                movement.movementShift -= focusedTank.speed();
             }
             if (getDownPressed())   // движение назад
             {
-                movementShift += focusedTank.speed();
-                if (rotationShift != 0.0D)      // если зажат поворот, инвертируем поворот
+                movement.movementShift += focusedTank.speed();
+                if (!movement.isNoRotation())      // если зажат поворот, инвертируем поворот
                 {
-                    rotationShift = -rotationShift;
+                    movement.rotationShift = -movement.rotationShift;
                 }
             }
             
-            if ( movementShift != 0.0D || rotationShift != 0.0D )
+            if ( !movement.isNoMove() )
             {
-                // для квадрата в фокусе проверяем возможность перекрытия других квадратов после сдвига
-                for (Tank testTank: tankList)
-                {
-                    if (testTank != focusedTank && !testTank.isDamaged())
-                    {
-                        if (focusedTank.isCrossing(movementShift, rotationShift, testTank.area))
-                        {
-                            noMove = true;
-                            break;
-                        }
-                    }
-                }
-                if (!noMove)
+                if (battleField.tankCanMove(focusedTank, movement))
                 { 
-                    focusedTank.move(movementShift,
-                                     rotationShift
-                                     );
+                    focusedTank.move(movement);
                 }
             }
-            if ( movementShift == 0.0D )
+            if ( movement.isNoMovement() )
             {
                 focusedTank.stopAcceleration();
             }
