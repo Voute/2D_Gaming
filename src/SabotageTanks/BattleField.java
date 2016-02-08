@@ -6,12 +6,14 @@
 package SabotageTanks;
 
 import SabotageTanks.Tanks.BurstingTank;
+import SabotageTanks.Tanks.Shell;
 import SabotageTanks.Tanks.Tank;
 import SabotageTanks.Tanks.TankMovement;
+import java.awt.Canvas;
 import java.awt.Color;
 import java.util.ArrayList;
 
-public class BattleField {
+public class BattleField extends Canvas {
     
     //  цвета квадратов    
     private final Color[] TANK_COLORS = {Color.GRAY,
@@ -25,21 +27,44 @@ public class BattleField {
     
     private ArrayList<Tank> tankList;     // массив квадратов
     private ArrayList<BurstingTank> burstList;
-    private ShellManager shellManager;
+    private ArrayList<Shell> shellList;        // массив снарядов
+
+    public final TankControl tankControl;  
+    public final ShellManager shellManager;    
+    public final int gameWidth, gameHeight;
     
-    public BattleField()
+    public BattleField(int gameWidth, int gameHeight)
     {
+        this.gameWidth = gameWidth;
+        this.gameHeight = gameHeight;
+        tankList = new ArrayList<Tank>();        
         
-        shellManager = new ShellManager();
-        tankList = new ArrayList<Tank>();
-        burstList = new ArrayList<BurstingTank>();
-                
         for (int i = 0; i <= 6; i++)
         {
             tankList.add(new Tank(TANK_COLORS[i], 10 + i * 5 + i * 40, 30, i));
         }
         
-        
+        shellList = new ArrayList<Shell>();
+        shellManager = new ShellManager(shellList);
+
+        burstList = new ArrayList<BurstingTank>();
+                
+        tankControl = new TankControl(this);
+        addKeyListener(tankControl.getKeyListener());      
+        addMouseListener(tankControl.getMouseListener());
+    }
+    
+    public void tick()
+    {
+        tankControl.calculateFocusedTankMove();
+        for (Tank tank: tankList)
+        {
+            if (tank == tankControl.getFocusedTank())
+            {
+                tank.rotateBarrel(tankControl.getCursorLocation());
+            }
+        }
+        shellManager.tickShells(this);
     }
     
     public ArrayList<Tank> getTanks()
@@ -52,9 +77,9 @@ public class BattleField {
         return burstList;
     }
     
-    public ShellManager getShellManager()
+    public ArrayList<Shell> getShells()
     {
-        return shellManager;
+        return shellList;
     }
     
     public Tank click(int x, int y)

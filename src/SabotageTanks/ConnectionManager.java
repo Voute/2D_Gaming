@@ -21,11 +21,11 @@ public class ConnectionManager {
     
     Server server;
     Client client;
-    Game game;
+    BattleField battleField;
     
-    public ConnectionManager(boolean isServer, String ip, int port, Game game)
+    public ConnectionManager(boolean isServer, String ip, int port, BattleField battleField)
     {
-        this.game = game;
+        this.battleField = battleField;
         
         if (isServer)
         {

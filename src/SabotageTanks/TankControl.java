@@ -25,11 +25,9 @@ public class TankControl {
 //    private MouseMotionListener mouseMovingHandler;
     private Tank focusedTank;
     private BattleField battleField;
-    private Game game;
     
-    TankControl(Game game, BattleField battleField)
+    TankControl(BattleField battleField)
     {
-        this.game = game;
         this.battleField = battleField;
     }
     
@@ -94,7 +92,7 @@ public class TankControl {
                 else if (e.getButton() == 3 &&        // правая кнопка мыши (выстрел)
                            focusedTank != null)
                 {   // создаем снаряд
-                    battleField.getShellManager().makeShell(focusedTank, e.getX(), e.getY());
+                    battleField.shellManager.makeShell(focusedTank, e.getX(), e.getY());
                 }
                 else if (e.getButton() == 2)        // средняя кнопка мыши
                 {
@@ -131,7 +129,7 @@ public class TankControl {
     }
     public Point getCursorLocation()
     {
-        return game.getMousePosition();
+        return battleField.getMousePosition();
     }
     public void calculateFocusedTankMove()
     {

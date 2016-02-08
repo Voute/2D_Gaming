@@ -13,13 +13,13 @@ import java.util.ArrayList;
  *
  * @author YTokmakov
  */
-public class ShellManager {
+public final class ShellManager {
+     
+    private ArrayList<Shell> shellList;
     
-    private ArrayList<Shell> shellList;        // массив снарядов
-    
-    public ShellManager ()
+    public ShellManager(ArrayList<Shell> shellList)
     {
-        shellList = new ArrayList<Shell>();
+        this.shellList = shellList;
     }
     
     public void makeShell(Tank tank, int targetX, int targetY)
@@ -40,10 +40,7 @@ public class ShellManager {
 //    {
 //        return shellList;
 //    }
-    public ArrayList<Shell> getShellsToDraw(int gameWidth,
-                                            int gameHeight,
-                                            BattleField battleField
-                                            )
+    public void tickShells(BattleField battleField)
     {
         if (!shellList.isEmpty())
         {
@@ -55,7 +52,7 @@ public class ShellManager {
             
             for (Shell bullet: shellsListToDraw)
             {
-                if (bullet.nextX() <= gameWidth && bullet.nextY() <= gameHeight)
+                if (bullet.nextX() <= battleField.gameWidth && bullet.nextY() <= battleField.gameHeight)
                 {
                     for (Tank tank: battleField.getTanks())
                     {
@@ -76,12 +73,7 @@ public class ShellManager {
             }
             // удаляем из массива снарядов вышедшие за границы экрана
             shellList.removeAll(removeList);  
-            
-            return shellsListToDraw;
-                    
-        } else
-        {
-            return null;
+                                
         }
     }
 }

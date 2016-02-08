@@ -18,15 +18,13 @@ import SabotageTanks.Tanks.Tank;
 import SabotageTanks.Tanks.Shell;
 import java.awt.BasicStroke;
 
-public class Game extends Canvas implements Runnable
+public class Game implements Runnable
 {
-
     private static final int WIDTH = 800;       // ширина игрового поля
     private static final int HEIGHT = 600;      // высота игрового поля
     private static final String ARTICLE = "2d game";        // заголовок окна
     private static JFrame frame;        // окно
     
-    private TankControl control;
     private DrawManager drawManager;
     private BattleField battleField;
     
@@ -34,16 +32,15 @@ public class Game extends Canvas implements Runnable
     
     public Game()
     {
-        battleField = new BattleField();
+        battleField = new BattleField(WIDTH, HEIGHT);
         
 //        objectsArrays = new ArrayList<>();
 //        objectsArrays.add(shellList);
         
-        control = new TankControl(this, battleField);
         drawManager = new DrawManager(WIDTH,
                           HEIGHT,
                           battleField,
-                          control);
+                          battleField.tankControl);
         
         frame = new JFrame(ARTICLE);
         
@@ -52,9 +49,7 @@ public class Game extends Canvas implements Runnable
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLayout(new BorderLayout());
         frame.setLocationRelativeTo(null);
-        frame.add(this, BorderLayout.CENTER);
-        addKeyListener(control.getKeyListener());      
-        addMouseListener(control.getMouseListener());
+        frame.add(battleField, BorderLayout.CENTER);
         
         frame.setVisible(true);
     }
@@ -96,6 +91,7 @@ public class Game extends Canvas implements Runnable
             {
                 frames++;
                 delta--;
+                battleField.tick();
                 shouldRender = true;
             }
             
@@ -116,21 +112,14 @@ public class Game extends Canvas implements Runnable
     // рисуем фрейм
     private void render()
     {
-        BufferStrategy bs = getBufferStrategy();
+        BufferStrategy bs = battleField.getBufferStrategy();
         if (bs == null)
         {
-            createBufferStrategy(3);
+            battleField.createBufferStrategy(3);
             return;
         }
         
         Graphics2D graph = (Graphics2D) bs.getDrawGraphics();
-        graph.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        graph.setColor(Color.WHITE);
-        graph.fillRect(0, 0, WIDTH, HEIGHT);
-        graph.setColor(Color.red);
-        graph.setStroke(new BasicStroke(2));
-        graph.drawString("Park the box!", 200, 200);
-        control.calculateFocusedTankMove();
         drawManager.drawField(graph);
         graph.dispose();
         bs.show();

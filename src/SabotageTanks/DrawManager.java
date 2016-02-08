@@ -11,7 +11,9 @@ import SabotageTanks.Tanks.Tank;
 import SabotageTanks.Tanks.Shell;
 import java.awt.Graphics2D;
 import SabotageTanks.Tanks.BurstingTank;
+import java.awt.BasicStroke;
 import java.awt.Polygon;
+import java.awt.RenderingHints;
 import java.io.File;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -25,7 +27,7 @@ import javax.swing.JApplet;
  *
  * @author YTokmakov
  */
-public class DrawManager {
+public final class DrawManager {
     
     private int gameWidth,
                 gameHeight;
@@ -46,6 +48,12 @@ public class DrawManager {
     
     synchronized public void drawField(Graphics2D graph)
     {
+        
+        graph.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        graph.setColor(Color.WHITE);
+        graph.fillRect(0, 0, gameWidth, gameHeight);
+        graph.setColor(Color.red);
+        graph.setStroke(new BasicStroke(2));
         
         drawTanks(graph);
 //        graph.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
@@ -75,15 +83,10 @@ public class DrawManager {
     
     synchronized public void drawShells(Graphics2D graph)       // рисуем снаряды
     {
-        ArrayList<Shell> shells = battleField.getShellManager().getShellsToDraw(gameWidth, gameHeight, battleField);
-        
-        if (shells != null)
+        for (Shell shell:battleField.getShells())
         {
-            for (Shell shell:shells)
-            {
-                graph.setColor(shell.color);
-                graph.fillOval(shell.getXdraw(), shell.getYdraw(), shell.DIAMETER, shell.DIAMETER);
-            }
+            graph.setColor(shell.color);
+            graph.fillOval(shell.getXdraw(), shell.getYdraw(), shell.DIAMETER, shell.DIAMETER);
         }
     }
     synchronized public void drawBursts(Graphics2D graph)
@@ -120,8 +123,7 @@ public class DrawManager {
                 {            
                     // рисуем границы - визуализацию фокуса
                     graph.setColor(Color.green);
-                    graph.drawPolygon(tank.area);
-                    tank.rotateBarrel(control.getCursorLocation());
+                    graph.drawPolygon(tank.area);                    
                 } else
                 {
                     graph.setColor(Color.BLACK);
