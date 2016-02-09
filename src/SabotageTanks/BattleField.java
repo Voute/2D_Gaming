@@ -56,6 +56,7 @@ public class BattleField extends Canvas {
     
     public void tick()
     {
+        
         tankControl.calculateFocusedTankMove();
         for (Tank tank: tankList)
         {
@@ -122,5 +123,39 @@ public class BattleField extends Canvas {
             }
         }
         return true;
+    }
+    
+    public BattleFieldState getBattleFieldState()
+    {
+        return BattleFieldState.createServerState(tankList, burstList, shellList);
+    }
+    
+    public BattleFieldState getPlayerState()
+    {
+        return BattleFieldState.createClientState(tankControl.getFocusedTank());  
+    }
+    
+    public void updateClientState(BattleFieldState state)
+    {
+        if (state.playerTank != null)
+        {
+            Tank tankState = state.playerTank;
+
+            for (Tank tank:tankList)
+            {
+                if (tankState.id == tank.id)
+                {
+                    tank = tankState;
+                    break;
+                }
+            }
+        }
+    }
+    
+    public void updateServerState(BattleFieldState state)
+    {
+        tankList = state.tankList;
+        shellList = state.shellList;
+        burstList = state.burstList;
     }
 }

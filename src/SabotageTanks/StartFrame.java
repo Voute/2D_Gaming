@@ -91,13 +91,11 @@ public class StartFrame extends JFrame implements ActionListener
     @Override
     public void actionPerformed(ActionEvent e)
     {   
-        game = new Game();
+        game = new Game(serverRadio.isSelected(),
+                        ipField.getText(),
+                        Integer.valueOf(portField.getText())
+                        );
         
-        connectManager = new ConnectionManager(serverRadio.isSelected(),
-                                               ipField.getText(),
-                                               Integer.valueOf(portField.getText()),
-                                               game
-                                               );
         setVisible(false);
         game.start();
     }

@@ -24,15 +24,24 @@ public class Game implements Runnable
     private static final int HEIGHT = 600;      // высота игрового поля
     private static final String ARTICLE = "2d game";        // заголовок окна
     private static JFrame frame;        // окно
+    private final String ipAddress;
+    private final boolean isServer;
     
     private DrawManager drawManager;
     private BattleField battleField;
+    private ConnectionManager connectManager;
+    
     
     private boolean win = false;        // успешная парковка в парковку
     
-    public Game()
+    public Game(boolean isServer, String ip, int port)
     {
+        this.isServer = isServer;
+        ipAddress = ip + ":" + port;
+        
         battleField = new BattleField(WIDTH, HEIGHT);
+        
+        connectManager = new ConnectionManager(isServer, ip, port, battleField);
         
 //        objectsArrays = new ArrayList<>();
 //        objectsArrays.add(shellList);
@@ -40,7 +49,9 @@ public class Game implements Runnable
         drawManager = new DrawManager(WIDTH,
                           HEIGHT,
                           battleField,
-                          battleField.tankControl);
+                          battleField.tankControl,
+                          ipAddress
+                            );
         
         frame = new JFrame(ARTICLE);
         
@@ -91,7 +102,36 @@ public class Game implements Runnable
             {
                 frames++;
                 delta--;
+                
+                if (isServer)
+                {
+                    BattleFieldState clientState = connectManager.receiveClientBattlefieldState();
+                    if (clientState != null)
+                    {
+                        battleField.updateClientState(clientState);
+                    }
+                }
+                else
+                {
+                    BattleFieldState serverStateState = connectManager.receiveServerBattlefieldState();
+                    if (serverStateState != null)
+                    {
+                        battleField.updateServerState(serverStateState);
+                    }
+                }
+                
                 battleField.tick();
+                
+                if (isServer)
+                    
+                {
+                    connectManager.sendToClientBattlefieldState(battleField.getBattleFieldState());
+                }
+                else
+                {
+                    connectManager.sendToServerBattlefieldState(battleField.getPlayerState());
+                }
+                
                 shouldRender = true;
             }
             

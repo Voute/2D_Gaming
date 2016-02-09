@@ -33,13 +33,16 @@ public final class DrawManager {
                 gameHeight;
     private TankControl control;
     private BattleField battleField;
+    private String ipAddress;
     
     public DrawManager(int gameWidth,
                        int gameHeight,
                        BattleField battleField,
-                       TankControl control
-                )
+                       TankControl control,
+                       String ipAddress
+                        )
     {
+        this.ipAddress = ipAddress;
         this.control = control;
         this.battleField = battleField;
         this.gameWidth = gameWidth;
@@ -71,7 +74,7 @@ public final class DrawManager {
 //            {
 //                s += obj.getName() + " ";
 //            }
-//            graph.drawString(s, WIDTH - 150, HEIGHT - 60);
+            graph.drawString("ip:" + ipAddress, gameWidth - 125, 10);
             graph.drawString("speed: " + control.getFocusedTank().getSpeed(), gameWidth - 70, gameHeight - 60);            
             graph.drawString("x: " + control.getFocusedTank().getX(), gameWidth - 50, gameHeight - 50);
             graph.drawString("y: " + control.getFocusedTank().getY(), gameWidth - 50, gameHeight - 40);
