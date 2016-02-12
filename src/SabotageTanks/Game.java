@@ -5,64 +5,51 @@
  */
 package SabotageTanks;
 
-import java.awt.BorderLayout;
-import java.awt.Canvas;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.image.BufferStrategy;
-import javax.swing.JFrame;
+import SabotageTanks.Control.GameControl;
+import SabotageTanks.Control.TankMovement;
+import SabotageTanks.GraphicObjects.GameObject;
+import SabotageTanks.GraphicObjects.Shell;
+import SabotageTanks.Net.Connection;
+import SabotageTanks.Interface.BattleField;
 import java.util.ArrayList;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
-import SabotageTanks.Tanks.Tank;
-import SabotageTanks.Tanks.Shell;
-import java.awt.BasicStroke;
+import SabotageTanks.GraphicObjects.Tank;
+import java.awt.Color;
+import java.util.List;
 
-public class Game implements Runnable
-{
+public abstract class Game implements Runnable
+{   
+    protected final StateServer gameState;
+    protected final StatePlayer playerState;
+    protected final Player player;
+    protected final Connection connection;
+    protected final GameControl control;
+    protected final BattleField battleField;
+    
+    private static final String ARTICLE = "SabotageTanks";        // заголовок окна
+    
     private static final int WIDTH = 800;       // ширина игрового поля
     private static final int HEIGHT = 600;      // высота игрового поля
-    private static final String ARTICLE = "2d game";        // заголовок окна
-    private static JFrame frame;        // окно
-    private final String ipAddress;
-    private final boolean isServer;
+
     
-    private DrawManager drawManager;
-    private BattleField battleField;
-    private ConnectionManager connectManager;
+
     
     
-    private boolean win = false;        // успешная парковка в парковку
-    
-    public Game(boolean isServer, String ip, int port)
+    public Game(String playerName, Connection connection)
     {
-        this.isServer = isServer;
-        ipAddress = ip + ":" + port;
+        String title = ARTICLE + " - " + connection.getLocalIp() + ":" + connection.getLocalPort();
         
-        battleField = new BattleField(WIDTH, HEIGHT);
+        this.connection = connection;
         
-        connectManager = new ConnectionManager(isServer, ip, port, battleField);
+        battleField = new BattleField(WIDTH, HEIGHT, title);
+        control = new GameControl(this);
+        battleField.addKeyListener(control.getKeyListener());      
+        battleField.addMouseListener(control.getMouseListener());
         
-//        objectsArrays = new ArrayList<>();
-//        objectsArrays.add(shellList);
+        Color playerColor = Player.TANK_COLORS[ (int)(Math.random()*7) ];
+        player = new Player(playerName, playerColor);
         
-        drawManager = new DrawManager(WIDTH,
-                          HEIGHT,
-                          battleField,
-                          battleField.tankControl,
-                          ipAddress
-                            );
-        
-        frame = new JFrame(ARTICLE);
-        
-        frame.setSize(new Dimension(WIDTH, HEIGHT));
-        frame.setResizable(false);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setLayout(new BorderLayout());
-        frame.setLocationRelativeTo(null);
-        frame.add(battleField, BorderLayout.CENTER);
-        
-        frame.setVisible(true);
+        gameState = new StateServer();
+        playerState = new StatePlayer();
     }
     
     public void start()
@@ -70,13 +57,6 @@ public class Game implements Runnable
         new Thread(this).start();       // стартуем игру в новом потоке        
     }
     
-    public static void main(String[] args)
-    {
-        new StartFrame(ARTICLE).setVisible(true);
-        
-//        new Game().start();     // создаем игру и сразу стартуем
-    }
-
     @Override
     public void run()
     {
@@ -103,34 +83,13 @@ public class Game implements Runnable
                 frames++;
                 delta--;
                 
-                if (isServer)
-                {
-                    BattleFieldState clientState = connectManager.receiveClientBattlefieldState();
-                    if (clientState != null)
-                    {
-                        battleField.updateClientState(clientState);
-                    }
-                }
-                else
-                {
-                    BattleFieldState serverStateState = connectManager.receiveServerBattlefieldState();
-                    if (serverStateState != null)
-                    {
-                        battleField.updateServerState(serverStateState);
-                    }
-                }
+                // receiving data
+                receiveState();
                 
-                battleField.tick();
+                tick();
                 
-                if (isServer)
-                    
-                {
-                    connectManager.sendToClientBattlefieldState(battleField.getBattleFieldState());
-                }
-                else
-                {
-                    connectManager.sendToServerBattlefieldState(battleField.getPlayerState());
-                }
+                // sending data
+                sendState();
                 
                 shouldRender = true;
             }
@@ -149,21 +108,48 @@ public class Game implements Runnable
             }
         }
     }
+    
+    public Tank generatePlayerTank()
+    {
+        playerState.tank = Tank.generate(player, this);
+        return playerState.tank;
+    }
+    
+    public int getWidth()
+    {
+        return WIDTH;
+    }
+    
+    public int getHeight()
+    {
+        return HEIGHT;
+    }
+    
+    public List<Shell> getShellList()
+    {
+        return gameState.shellList;
+    }
+    
+    public List<Shell> getPlayerShellList()
+    {
+        return playerState.shellList;
+    }
+    
+    protected abstract void tick();
+    protected abstract void sendState();
+    protected abstract void receiveState();
+    
+    protected boolean checkPlayerCanMove(Tank playerTank, TankMovement movement)
+    {
+        
+    }
+    
     // рисуем фрейм
     private void render()
     {
-        BufferStrategy bs = battleField.getBufferStrategy();
-        if (bs == null)
-        {
-            battleField.createBufferStrategy(3);
-            return;
-        }
-        
-        Graphics2D graph = (Graphics2D) bs.getDrawGraphics();
-        drawManager.drawField(graph);
-        graph.dispose();
-        bs.show();
+        battleField.draw(gameState.getObjectsToDraw());
     }
+    
     public ArrayList<GameObject> getNearObjects(GameObject testingObject)
     {
         ArrayList<GameObject> returnArray = new ArrayList<>();
@@ -180,6 +166,8 @@ public class Game implements Runnable
         
         return returnArray;
     }
+    
+    
     private static class Relations
     {
         static boolean areNear(GameObject obj1, GameObject obj2)

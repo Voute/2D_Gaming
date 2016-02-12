@@ -5,16 +5,11 @@
  */
 package SabotageTanks;
 
+
 /**
  *
- * @author YTokmakov
+ * @author ytokmakov
  */
-public abstract class GameObject
-{
-    
-    public abstract double getCircumscribedRadius();
-    public abstract int getX();
-    public abstract int getY();
-    public abstract String getName();
-    
+public abstract class State {
+       
 }

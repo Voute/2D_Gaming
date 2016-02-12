@@ -3,16 +3,20 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package SabotageTanks;
+package SabotageTanks.GraphicObjects;
+
+import java.awt.Graphics2D;
 
 /**
  *
  * @author YTokmakov
  */
-public interface GameGraphicObject {
+public interface GameObject {
     
     public double getCircumscribedRadius();
     public int getX();
     public int getY();
+    public String getId();
+    public void draw(Graphics2D graph);
     
 }

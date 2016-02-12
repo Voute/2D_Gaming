@@ -3,32 +3,34 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package SabotageTanks;
+package SabotageTanks.Control;
 
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import SabotageTanks.Tanks.Tank;
+import SabotageTanks.GraphicObjects.Tank;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.Point;
-import SabotageTanks.Tanks.TankMovement;
+import SabotageTanks.Game;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 /**
  *
  * @author YTokmakov
  */
-public class TankControl {
+public class GameControl {
     
     private boolean upPressed,
                     downPressed,
                     leftPressed,
                     rightPressed;
 //    private MouseMotionListener mouseMovingHandler;
-    private Tank focusedTank;
-    private BattleField battleField;
+    private Game game;
+    private Tank playerTank;
     
-    TankControl(BattleField battleField)
+    public GameControl(Game game)
     {
-        this.battleField = battleField;
+        this.game = game;
     }
     
     public KeyListener getKeyListener()      // обработчик клавиш клавы
@@ -40,7 +42,7 @@ public class TankControl {
             @Override
             public void keyPressed(KeyEvent e)      // кнопка клавы зажата
             {
-                if (focusedTank != null)     // если квадрат в фокусе
+                if (playerTank != null)     // если квадрат в фокусе
                 {
                     if (e.getKeyCode() == KeyEvent.VK_UP)
                     {
@@ -85,18 +87,24 @@ public class TankControl {
             @Override
             synchronized public void mousePressed(MouseEvent e)     // кнопка мыши зажата
             {
-                if (e.getButton() == 1)     // левая кнопка мыши (фокус)
+                if (e.getButton() == 1)     // левая кнопка мыши (shot)
                 {
-                    focusedTank = battleField.click(e.getX(), e.getY());   
+                    if (playerTank != null)
+                    {
+                        playerTank.shot(e.getX(), e.getY());
+                    }
                 }
                 else if (e.getButton() == 3 &&        // правая кнопка мыши (выстрел)
-                           focusedTank != null)
-                {   // создаем снаряд
-                    battleField.shellManager.makeShell(focusedTank, e.getX(), e.getY());
+                           playerTank != null)
+                {  
+                    
                 }
-                else if (e.getButton() == 2)        // средняя кнопка мыши
+                else if (e.getButton() == 2)        // средняя кнопка мыши (ресаем игрока)
                 {
-                    battleField.restoreTanks();
+                    if (playerTank == null)
+                    {
+                        playerTank = game.generatePlayerTank();
+                    }
                 }
             }
             @Override
@@ -125,33 +133,29 @@ public class TankControl {
     }
     public Tank getFocusedTank()
     {
-        return focusedTank;
+        return playerTank;
     }
-    public Point getCursorLocation()
-    {
-        return battleField.getMousePosition();
-    }
-    public void calculateFocusedTankMove()
+    public TankMovement getPlayerMovement()
     {
         TankMovement movement = new TankMovement();
         
-        if (focusedTank != null)
+        if (playerTank != null)
         {
             if (getRightPressed())      // поворот вправо
             {
-                movement.rotationShift += focusedTank.rotationSpeed;
+                movement.rotationShift += playerTank.rotationSpeed;
             }
             if (getLeftPressed())       // поворот влево
             {
-                movement.rotationShift -= focusedTank.rotationSpeed;                
+                movement.rotationShift -= playerTank.rotationSpeed;                
             } 
             if (getUpPressed())     // движение вперед
             {
-                movement.movementShift -= focusedTank.speed();
+                movement.movementShift -= playerTank.speed();
             }
             if (getDownPressed())   // движение назад
             {
-                movement.movementShift += focusedTank.speed();
+                movement.movementShift += playerTank.speed();
                 if (!movement.isNoRotation())      // если зажат поворот, инвертируем поворот
                 {
                     movement.rotationShift = -movement.rotationShift;
@@ -160,14 +164,14 @@ public class TankControl {
             
             if ( !movement.isNoMove() )
             {
-                if (battleField.tankCanMove(focusedTank, movement))
+                if (battleField.tankCanMove(playerTank, movement))
                 { 
-                    focusedTank.move(movement);
+                    playerTank.move(movement);
                 }
             }
             if ( movement.isNoMovement() )
             {
-                focusedTank.stopAcceleration();
+                playerTank.stopAcceleration();
             }
         }
     }

@@ -3,34 +3,34 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package SabotageTanks.Tanks;
+package SabotageTanks.GraphicObjects;
 
 import java.awt.Color;
-import SabotageTanks.GameObject;
+import java.awt.Graphics2D;
 
 /**
  *
  * @author YTokmakov
  */
-    public class Shell extends GameObject
+    public class Shell implements GameObject
     {
         public final int RADIUS = 5;
         public final int DIAMETER = RADIUS * 2;
         public final int speed = 2;        // скорость полета: пиксель/кадр
         public final Color color = Color.DARK_GRAY;
-        public final int tankId;
+        public final String tankId;
         private double x;       // координата по оси Х
         private double y;       // координата по оси У
         private double Xstep;       // величина изменения по оси Х в кадр
         private double Ystep;       // величина изменения по оси У в кадр
         
         public Shell(int straightX1,    // две точки на прямой
-                     int straightX2,
                      int straightY1,
+                     int straightX2,
                      int straightY2,
                      int startX,        // позиция вылета
                      int startY,
-                     int tankId
+                     String tankId
                      ) throws Exception
         {
             x = startX;
@@ -42,7 +42,8 @@ import SabotageTanks.GameObject;
             if (straightY1 == straightY2 && straightX1 == straightX2)
             {
                 throw new Exception();
-            } else {
+            } else
+            {
                 // вычисляем разницу точки выстрела и цели выстрела
                 int deltaX = straightX2-straightX1;
                 int deltaY = straightY2-straightY1;
@@ -87,7 +88,22 @@ import SabotageTanks.GameObject;
         }
 
     @Override
-    public String getName() {
-        return "shell";
+    public String getId() {
+        return tankId;
     }
+
+    @Override
+    public void draw(Graphics2D graph) {
+        
+        graph.setColor(color);
+        graph.fillOval(getXdraw(), getYdraw(), DIAMETER, DIAMETER);
+        
+    }
+    
+    public void updateStats(Shell shell)
+    {
+        this.x = shell.x;
+        this.y = shell.y;
+    }
+    
     }

@@ -3,9 +3,8 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package SabotageTanks.Tanks;
+package SabotageTanks.GraphicObjects;
 
-import SabotageTanks.GameObject;
 import java.util.ArrayList;
 import java.awt.Polygon;
 import java.awt.Color;
@@ -13,13 +12,29 @@ import java.awt.Color;
  *
  * @author YTokmakov
  */
-public class BurstingTank extends GameObject
+public class BurstingTank
 {
     private int x, y;
     private ArrayList<Piece> pieces;
     private int renders;
     public Color color;
 
+//            for (BurstingTank burst: burstList)
+//        {
+//            try
+//            {
+//                ArrayList<Polygon> pieces = (ArrayList<Polygon>)burst.getRenderedPieces().clone();
+//                for (Polygon polygon: pieces)
+//                {
+//                    graph.setColor(burst.color);
+//                    graph.fillPolygon(polygon);
+//                }
+//            } catch(NullPointerException ex)
+//            {
+//                
+//            }
+//        }
+    
     BurstingTank(int x, int y, int verge, Color color)
     {
         pieces = new ArrayList<>();
@@ -97,25 +112,7 @@ public class BurstingTank extends GameObject
         }
     }
     
-    @Override
-    public double getCircumscribedRadius() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
 
-    @Override
-    public int getX() {
-        return x;
-    }
-
-    @Override
-    public int getY() {
-        return y;
-    }
-
-    @Override
-    public String getName() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
     private class Piece extends Polygon
     {
         private int Xshift;
