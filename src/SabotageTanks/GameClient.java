@@ -5,6 +5,7 @@
  */
 package SabotageTanks;
 
+import SabotageTanks.Control.TankMovement;
 import SabotageTanks.GraphicObjects.Tank;
 import SabotageTanks.Net.ConnectionClient;
 import java.io.IOException;
@@ -19,12 +20,17 @@ public class GameClient extends Game{
 
     public GameClient(String playerName, ConnectionClient connectionServer)
     {
-        super(playerName, connectionServer);
+        super(playerName + "1", connectionServer);
     }
     
     @Override
     protected void tick()  
     {
+        TankMovement playerMovement = control.getPlayerMovement();
+        if (playerState.tank != null)
+        {
+            playerState.tank.move(playerMovement); 
+        }
         //nothing to do on the client side
     }
 
@@ -40,6 +46,15 @@ public class GameClient extends Game{
     {
         try {
             gameState = (StateServer)connection.receiveState();
+            if (gameState != null && playerState.tank != null)
+            {
+                Tank updatedTank = gameState.getTank(playerState.tank.getId());
+                if (updatedTank != null)
+                {
+                    playerState.tank.updateStats(updatedTank);               
+                }
+            }
+            
         } catch (IOException ex) {
             GameLog.write(ex);
         }

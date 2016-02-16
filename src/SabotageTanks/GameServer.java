@@ -12,6 +12,7 @@ import SabotageTanks.Net.ConnectionServer;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  *
@@ -19,55 +20,73 @@ import java.util.Iterator;
  */
 public class GameServer extends Game {
     
+    private List<Tank> tanksToUpdate;
+    private List<Shell> shellsToAdd;
+    
     public GameServer(String playerName, ConnectionServer connectionServer)
     {
         super(playerName, connectionServer);
+        shellsToAdd = new ArrayList<>();
+        tanksToUpdate = new ArrayList<>();
     }
 
     @Override
     protected void tick() {
         
-        TankMovement playerMovement = control.getPlayerMovement();
-        
-        if (checkPlayerCanMove(playerState.tank, playerMovement))
+        if (playerState.tank != null)
         {
-            playerState.tank.move(playerMovement);
+            TankMovement playerMovement = control.getPlayerMovement();
+        
+            playerState.tank.move(playerMovement);      
+            gameState.updateTank(playerState.tank);
         }
         
-        playerState.tank.rotateBarrel(battleField.getCursonPosition());
-                
-        if (!shellList.isEmpty())
+        if (tanksToUpdate != null)
         {
-            // клонируем массив снарядов для прорисовки
-            ArrayList<Shell> shellsListToDraw = (ArrayList<Shell>)shellList.clone();
-
-            // массив для снарядов, которые вышли за границы фрейма
-            ArrayList<Shell> removeList = new ArrayList<Shell>();
-            
-            for (Shell bullet: shellsListToDraw)
+            for(Tank tank:tanksToUpdate)
             {
-                if (bullet.nextX() <= battleField.gameWidth && bullet.nextY() <= battleField.gameHeight)
-                {
-                    for (Tank tank: battleField.getTanks())
-                    {
-                        if ( tank.containsXY(bullet.getX(), bullet.getY()) &&
-                             tank.id != bullet.tankId   &&
-                             !tank.getIsBursting()
-                           )
-                        {
-                            removeList.add(bullet);
-                            battleField.getBurstingTanks().add(tank.setDamaged());
-                            break;
-                        }
-                    }
-                } else {
-                    // добавляем к удалению из массива
-                    removeList.add(bullet);
-                }
+                gameState.updateTank(tank);
             }
-            // удаляем из массива снарядов вышедшие за границы экрана
-            shellList.removeAll(removeList);  
+            tanksToUpdate.clear();
         }
+
+        if (shellsToAdd != null && !shellsToAdd.isEmpty())
+        {
+            gameState.getShells().addAll(shellsToAdd);
+            shellsToAdd.clear();
+        }
+        
+        // массив для снарядов, которые вышли за границы фрейма
+        ArrayList<Shell> removeShellList = new ArrayList<Shell>();
+
+        for (Shell shell: gameState.getShells())
+        {
+            int shellX = shell.nextX();
+            int shellY = shell.nextY();
+            
+            if (shellX <= getWidth() && shellY <= getHeight()
+                && shellX >= 0 && shellY >= 0)
+            {
+                for (Tank tank: gameState.getTanks())
+                {
+                    if ( tank.containsXY(shell.getX(), shell.getY()) &&
+                         !tank.getId().matches(shell.getId())  &&
+                         !tank.getBursting()
+                       )
+                    {
+                        removeShellList.add(shell);
+                        tank.setBursting();
+                        break;
+                    }
+                }
+            } else {
+                // добавляем к удалению из массива
+                removeShellList.add(shell);
+            }
+        }
+        // удаляем из массива снарядов вышедшие за границы экрана
+        gameState.getShells().removeAll(removeShellList);  
+    
     }
 
     @Override
@@ -82,33 +101,25 @@ public class GameServer extends Game {
         try {
             StatePlayer statePlayer = (StatePlayer)connection.receiveState();
             
-            for (Shell playerShell:statePlayer.shellList)
-            {
-                synchronized (gameState.shellList)
-                {
-                    gameState.shellList.add(playerShell);
-                }
-            }
-            
-            synchronized (gameState.tankList)
-            {
-
-                Iterator it = gameState.tankList.iterator();
-                while (it.hasNext())
-                {
-                    Tank tank = (Tank)it.next();
-                    if (statePlayer.tank.getId() == tank.getId())
-                    {
-                        // должна быть проверка передвижений клиента!
-                        tank.updateStats(statePlayer.tank);
-                        break;
-                    }
-                }
-
-            }
+            shellsToAdd.addAll(statePlayer.shellList);
+                    
+            tanksToUpdate.add(statePlayer.tank);
             
         } catch (IOException ex) {
             GameLog.write(ex);
+        }
+        
+        if (playerState.tank != null)
+        {
+            Tank stateTank = gameState.getTank(playerState.tank.getId());
+            if (stateTank != null)
+            {
+                playerState.tank.updateStats(stateTank);
+            }
+            
+            shellsToAdd.addAll(playerState.shellList);
+            playerState.shellList.clear();
+            
         }
     }
     

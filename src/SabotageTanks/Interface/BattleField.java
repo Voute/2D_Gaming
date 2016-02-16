@@ -5,12 +5,8 @@
  */
 package SabotageTanks.Interface;
 
-import SabotageTanks.GraphicObjects.BurstingTank;
 import SabotageTanks.GraphicObjects.GameObject;
-import SabotageTanks.GraphicObjects.Shell;
-import SabotageTanks.GraphicObjects.Tank;
-import SabotageTanks.Control.TankMovement;
-import SabotageTanks.ShellManager;
+import SabotageTanks.Game;
 import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Canvas;
@@ -19,6 +15,8 @@ import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.RenderingHints;
+import java.awt.event.KeyListener;
+import java.awt.event.MouseListener;
 import java.awt.image.BufferStrategy;
 import java.util.ArrayList;
 import javax.swing.JFrame;
@@ -26,15 +24,6 @@ import javax.swing.JFrame;
 public class BattleField extends JFrame {
     
     private Canvas canvas;
-    private TankList tankList;     // массив квадратов
-    private ArrayList<BurstingTank> burstList;
-    private ArrayList<Shell> shellList;        // массив снарядов
-    private Tank playerTank;
-    
-
-    private final ShellManager shellManager;    
-
-    
     
     public BattleField(int gameWidth, int gameHeight, String title)
     {
@@ -48,121 +37,27 @@ public class BattleField extends JFrame {
         setLocationRelativeTo(null);
         add(canvas, BorderLayout.CENTER);
         setVisible(true);
-        
-        tankList = new TankList();        
-        
-        shellList = new ArrayList<Shell>();
-        shellManager = new ShellManager(shellList);
 
-        burstList = new ArrayList<BurstingTank>();
                 
     }
-    
-    public void tick()
-    {
-        
 
-        for (Tank tank: tankList)
-        {
-            if (tank == tankControl.getFocusedTank())
-            {
-                tank.rotateBarrel(tankControl.getCursorLocation());
-            }
-        }
-        shellManager.tickShells(this);
+    @Override
+    public synchronized void addMouseListener(MouseListener l) {
+        canvas.addMouseListener(l);
     }
-    
-    public ArrayList<Tank> getTanks()
-    {
-        return tankList;
+
+    @Override
+    public synchronized void addKeyListener(KeyListener l) {
+        canvas.addKeyListener(l);
     }
-    
-    public ArrayList<BurstingTank> getBurstingTanks()
-    {
-        return burstList;
-    }
-    
-    public ArrayList<Shell> getShells()
-    {
-        return shellList;
-    }
-    
-//    public int getWidth()
-//    {
-//        return fieldWidth;
-//    }
-//    
-//    public int getHeight()
-//    {
-//        return fieldHeight;
-//    }
-    
-    public Tank click(int x, int y)
-    {
-        for (Tank tank: tankList) {        // проверяем, какой квадрат в точке клика
-            if (tank.containsXY(x, y))
-            {
-                return tank;
-            }
-        } 
-        return null;
-    }
-    public Tank getTank(int tankId)
-    {
-        for (Tank tank: tankList) {
-            if (tank.id == tankId) return tank;
-        }
-        return null;
-    }
-    
-    public void restoreTanks()
-    {
-        for (Tank tank: tankList)
-        {
-            tank.restore();
-        }
-    }
-    
-    public boolean tankCanMove(Tank checkingTank, TankMovement movement)
-    {
-        // для квадрата в фокусе проверяем возможность перекрытия других квадратов после сдвига
-        for (Tank testTank: tankList)
-        {
-            if (testTank.id != checkingTank.id && !testTank.getIsBursting())
-            {
-                if (checkingTank.isCrossing(movement, testTank.area))
-                {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-      
-    public Point getCursonPosition()
+
+        
+    public Point getCursorPosition()
     {
         return canvas.getMousePosition();
     }
     
-    public BattleFieldState getBattleFieldState()
-    {
-        return BattleFieldState.createServerState(tankList, burstList, shellList);
-    }
-    public BattleFieldState getPlayerState()
-    {
-        return BattleFieldState.createClientState(tankControl.getFocusedTank());  
-    }
-    public void updateClientState(BattleFieldClientState state)
-    {
-        tankList.addOrUpdate(state.playerTank);
-    }
-    public void updateServerState(BattleFieldState state)
-    {
-        tankList = state.tankList;
-        shellList = state.shellList;
-        burstList = state.burstList;
-    }
-    public void draw(ArrayList<GameObject> objectArray)
+    public void draw(ArrayList<GameObject> objectArray, Game game)
     {
         BufferStrategy bs = canvas.getBufferStrategy();
         if (bs == null)
@@ -173,11 +68,6 @@ public class BattleField extends JFrame {
         
         Graphics2D graph = (Graphics2D) bs.getDrawGraphics();
         graph.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        
-        for (GameObject object:objectArray)
-        {
-            object.draw(graph);
-        }
         
         graph.setColor(Color.WHITE);
         graph.fillRect(0, 0, getWidth(), getHeight());
@@ -198,11 +88,24 @@ public class BattleField extends JFrame {
 //            {
 //                s += obj.getName() + " ";
 //            }
-//        graph.drawString("ip:" + ipAddress, gameWidth - 125, 10);
-        graph.drawString("speed: " + control.getFocusedTank().getSpeed(), gameWidth - 70, gameHeight - 60);            
-        graph.drawString("x: " + control.getFocusedTank().getX(), gameWidth - 50, gameHeight - 50);
-        graph.drawString("y: " + control.getFocusedTank().getY(), gameWidth - 50, gameHeight - 40);
+        graph.drawString("shells:" + game.getShellsQuantity(), game.getWidth() - 125, 10);
+        graph.drawString("speed: " + game.getPlayerSpeed(), game.getWidth() - 70, game.getHeight()- 60);            
+        graph.drawString("x: " + game.getPlayerX(), game.getWidth() - 50, game.getHeight() - 50);
+        graph.drawString("y: " + game.getPlayerY(), game.getWidth() - 50, game.getHeight() - 40);
         graph.drawString("To restore tanks press wheel mouse button", 10, 10);
+        
+        
+        if (objectArray != null)
+        {
+            for (GameObject object:objectArray)
+            {
+                if (object != null)
+                {
+                    object.draw(graph);
+                }
+            }
+        }
+
         
         graph.dispose();
         bs.show();

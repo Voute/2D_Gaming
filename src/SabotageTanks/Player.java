@@ -43,4 +43,8 @@ public final class Player {
     {
         return color;
     }
+    public static Color getRandomColor()
+    {
+        return TANK_COLORS[ (int)(Math.random()*7) ];
+    }
 }

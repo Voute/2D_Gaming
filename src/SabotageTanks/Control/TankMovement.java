@@ -13,6 +13,8 @@ public class TankMovement {
     
         public double movementShift = 0.0D;     // перемещение вперед-назад
         public double rotationShift = 0.0D;
+        public int cursorX = 0;
+        public int cursorY = 0;
     
     public boolean isNoMove()
     {

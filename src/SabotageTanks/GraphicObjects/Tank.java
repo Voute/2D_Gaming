@@ -27,9 +27,11 @@ import java.util.List;
         public final static int WIDTH = 40;
         public final static int HEIGHT = 40;
         public final static double rotationSpeed = 0.02D;
-        public static boolean moveStatus = false;
         public TankArea area;
         
+        
+        private List<BurstPiece> burstPieces;
+        private int burstRenders;
         private static double speed = 1.5D;
         private final static double START_SPEED = 1.5D;
         private final static double ACCELERATION = 0.01D;
@@ -39,6 +41,7 @@ import java.util.List;
         private double x,      // координата размещения по оси Х (центр)
                        y;      // координата размещения по оси У (центр)
         private boolean bursting;
+        private boolean readyToReset;
         
         public int XbarrelTip,     // Х координата вершины ствола
                    YbarrelTip;     // У координата вершины ствола
@@ -48,28 +51,22 @@ import java.util.List;
         
         public Tank(Color color, int Xaxis, int Yaxis, String tankId, List<Shell> shellList)
         {
+            this.bursting = false;
             this.id = tankId;
             this.color = color;
             this.shellList = shellList;
             this.x = Xaxis + WIDTH / 2;
             this.y = Yaxis + HEIGHT / 2;
             
+            readyToReset = false;
+            
             area = new TankArea(Xaxis, Yaxis);
+            burstPieces = new ArrayList<>();
             move(new TankMovement());
             
             XbarrelTip = getX();
             YbarrelTip = Yaxis;
-        }
-        public void rotateBarrel(Point target)
-        {
-            if (target != null)
-            {
-                calculateBarrel(target.x, target.y);
-            } else
-            {
-                calculateBarrel(XbarrelTip, YbarrelTip);
-            }
-        }   
+        }  
         public void shot(int targetX, int targetY)
         {
             try {
@@ -93,42 +90,42 @@ import java.util.List;
         public void setBursting()
         {
             bursting = true;
-            
         }
-        public void restore()
-        {
-            bursting = false;
-            rotation = Math.PI / 2;
-//            x = 10 + id * 5 + id * 40;
-            y = 30;
-            move(new TankMovement());
-            XbarrelTip = getX();
-            YbarrelTip = 30;
-        }
-        public boolean getIsBursting()
+        public boolean getBursting()
         {
             return bursting;
+        }
+        public boolean getReadyToReset()
+        {
+            return readyToReset;
         }
         // перемещает квадрат на новые координаты
         public void move(TankMovement movement)
         {
-            if ( !movement.isNoMove() )
+            if (!bursting)
             {
-                if (battleField.tankCanMove(playerTank, movement))
-                { 
-                    playerTank.move(movement);
+                if ( movement.isNoMovement() )
+                {
+                    stopAcceleration();
+                }
+
+
+                rotation += movement.rotationShift;
+                x += area.calculateXshift(rotation, movement.movementShift);
+                y += area.calculateYshift(rotation, movement.movementShift);
+                area.calculateNewLocation();
+
+                calculateBarrel(movement.cursorX, movement.cursorY);
+            } else
+            {
+                if (!burstPieces.isEmpty())
+                {
+                    for (BurstPiece piece:burstPieces)
+                    {
+                        piece.tick();
+                    }
                 }
             }
-            if ( movement.isNoMovement() )
-            {
-                stopAcceleration();
-            }
-            
-            
-            rotation += movement.rotationShift;
-            x += area.calculateXshift(rotation, movement.movementShift);
-            y += area.calculateYshift(rotation, movement.movementShift);
-            area.calculateNewLocation();
         }
         // перекрывают ли границы квадрата указанные границы другого квадрата
         public Polygon assumeMove(double movementShift, double rotationShift)
@@ -142,6 +139,10 @@ import java.util.List;
                 return assumedTankArea.contains(testingArea.xpoints, testingArea.ypoints) ||
                        testingArea.contains(assumedTankArea.xpoints, assumedTankArea.ypoints)
                        ;
+        }
+        public boolean isCrossing(Tank checkingTank)
+        {
+            return checkingTank.getArea().contains(area.xpoints, area.ypoints);
         }
         public boolean containsXY(int x, int y)
         {
@@ -162,6 +163,14 @@ import java.util.List;
         public double getYabsolute()
         {
             return y;
+        }
+        public TankArea getArea()
+        {
+            return area;
+        }
+        public void changeColor(Color newColor)
+        {
+            color = newColor;
         }
         public double speed()
         {   if ( speed < MAX_SPEED )
@@ -191,11 +200,15 @@ import java.util.List;
         {
             return id;
         }
-        public static Tank generate(Player owner, Game game)
+        public boolean sameId(GameObject gameObject)
+        {
+            return (gameObject.getId().matches(getId()));
+        }
+        public static Tank generate(Player owner, Game game, List<Shell> ownerShellList)
         {
             int randomX = (int) ( Math.random()*(game.getWidth() - WIDTH) + (int)(WIDTH / 2) );
             int randomY = (int) ( Math.random()*(game.getHeight() - HEIGHT) + (int)(HEIGHT / 2) );
-            return new Tank(owner.getColor(), randomX, randomY, owner.getName(), game.getPlayerShellList());
+            return new Tank(owner.getColor(), randomX, randomY, owner.getName(), ownerShellList);
         }
         public void updateStats(Tank updatingTank)
         {
@@ -206,6 +219,10 @@ import java.util.List;
             this.y = updatingTank.y;
             this.rotation = updatingTank.rotation;
             this.area = updatingTank.area;
+            this.color = updatingTank.color;
+            this.readyToReset = updatingTank.readyToReset;
+//            this.burstPieces = updatingTank.burstPieces;
+            this.burstRenders = updatingTank.burstRenders;
         }
         
         @Override
@@ -225,7 +242,7 @@ import java.util.List;
     @Override
     public void draw(Graphics2D graph)
     {
-        if (!getIsBursting())
+        if (!bursting)
         {
             // рисуем танк
             graph.setColor(color);
@@ -236,9 +253,79 @@ import java.util.List;
             int[] yy = {getY(), YbarrelTip};
             graph.drawPolyline(xx, yy, 2);
 
-        } else
+        } else if (!readyToReset)
         {
-            // bursting tank
+            if (burstPieces.isEmpty())
+            {
+                burstRenders = 0;
+                
+                int[] xx = new int[9];
+                int[] yy = new int[9];
+                int half = (int)(HEIGHT / 2);
+
+                xx[0] = getX() - half;
+                xx[1] = getX();
+                xx[2] = getX() + half;
+                xx[3] = getX() - half;
+                xx[4] = getX();
+                xx[5] = getX() + half;
+                xx[6] = getX() - half;
+                xx[7] = getX();
+                xx[8] = getX() + half;
+
+                yy[0] = getY() - half;
+                yy[1] = getY() - half;
+                yy[2] = getY() - half;
+                yy[3] = getY();
+                yy[4] = getY();
+                yy[5] = getY();
+                yy[6] = getY() + half;
+                yy[7] = getY() + half;
+                yy[8] = getY() + half;
+
+                BurstPiece polygon = new BurstPiece(-1,-1);
+                polygon.addPoint(xx[0], yy[0]);
+                polygon.addPoint(xx[1], yy[1]);
+                polygon.addPoint(xx[4], yy[4]);
+                polygon.addPoint(xx[3], yy[3]);
+                burstPieces.add(polygon);
+
+                polygon = new BurstPiece( 1,-1);
+                polygon.addPoint(xx[1], yy[1]);
+                polygon.addPoint(xx[2], yy[2]);
+                polygon.addPoint(xx[5], yy[5]);
+                polygon.addPoint(xx[4], yy[4]);
+                burstPieces.add(polygon);
+
+                polygon = new BurstPiece( -1, 1);
+                polygon.addPoint(xx[3], yy[3]);
+                polygon.addPoint(xx[4], yy[4]);
+                polygon.addPoint(xx[7], yy[7]);
+                polygon.addPoint(xx[6], yy[6]);
+                burstPieces.add(polygon);   
+
+                polygon = new BurstPiece( 1, 1);
+                polygon.addPoint(xx[4], yy[4]);
+                polygon.addPoint(xx[5], yy[5]);
+                polygon.addPoint(xx[8], yy[8]);
+                polygon.addPoint(xx[7], yy[7]);
+                burstPieces.add(polygon);
+            }
+            
+            if (burstRenders <= 15)
+            {
+                graph.setColor(color);
+                for (BurstPiece piece:burstPieces)
+                {
+                    graph.fill(piece);
+                }
+                burstRenders++;
+            } else
+            {
+                burstPieces.clear();
+                readyToReset = true;
+            }
+            
         }
     }
         
@@ -322,7 +409,25 @@ import java.util.List;
                 return new TankArea(getPoints(circumscribedRadius, newRotation,(int)Xnew,(int)Ynew));
             }
         }
+        private class BurstPiece extends Polygon
+    {
+        private int Xshift;
+        private int Yshift;
         
+        BurstPiece(int Xshift, int Yshift)
+        {
+            this.Xshift = Xshift;
+            this.Yshift = Yshift;
+        }
+        void tick()
+        {
+            reset();
+            for (int i = 0; i < 4; i++)
+            {
+                addPoint(xpoints[i] + Xshift, ypoints[i] + Yshift);
+            }
+        }
+    }
     }
 
 

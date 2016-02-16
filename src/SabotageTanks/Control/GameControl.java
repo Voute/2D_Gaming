@@ -12,8 +12,8 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.Point;
 import SabotageTanks.Game;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import SabotageTanks.Player;
+import java.awt.Color;
 /**
  *
  * @author YTokmakov
@@ -26,7 +26,7 @@ public class GameControl {
                     rightPressed;
 //    private MouseMotionListener mouseMovingHandler;
     private Game game;
-    private Tank playerTank;
+    private Tank playerTank = null;
     
     public GameControl(Game game)
     {
@@ -89,19 +89,25 @@ public class GameControl {
             {
                 if (e.getButton() == 1)     // левая кнопка мыши (shot)
                 {
-                    if (playerTank != null)
+                    if (playerTank != null && !playerTank.getBursting())
                     {
                         playerTank.shot(e.getX(), e.getY());
                     }
                 }
-                else if (e.getButton() == 3 &&        // правая кнопка мыши (выстрел)
+                else if (e.getButton() == 3 &&        // правая кнопка мыши (смена цвета)
                            playerTank != null)
                 {  
+                    Color newColor;
+                    do
+                    {
+                        newColor = Player.getRandomColor();
+                    } while (playerTank.getColor() == newColor);
                     
+                    playerTank.changeColor(newColor);
                 }
                 else if (e.getButton() == 2)        // средняя кнопка мыши (ресаем игрока)
                 {
-                    if (playerTank == null)
+                    if (playerTank == null || playerTank.getReadyToReset())
                     {
                         playerTank = game.generatePlayerTank();
                     }
@@ -162,17 +168,20 @@ public class GameControl {
                 }
             }
             
-            if ( !movement.isNoMove() )
-            {
-                if (battleField.tankCanMove(playerTank, movement))
-                { 
-                    playerTank.move(movement);
-                }
-            }
             if ( movement.isNoMovement() )
             {
                 playerTank.stopAcceleration();
             }
+            
+            Point cursorPoint = game.getCursorPosition();
+            if (cursorPoint != null)
+            {
+                movement.cursorX = cursorPoint.x;
+                movement.cursorY = cursorPoint.y;
+            }
+            
         }
+        
+        return movement;
     }
 }

@@ -18,7 +18,7 @@ import java.awt.Graphics2D;
         public final int DIAMETER = RADIUS * 2;
         public final int speed = 2;        // скорость полета: пиксель/кадр
         public final Color color = Color.DARK_GRAY;
-        public final String tankId;
+        private final String tankId;
         private double x;       // координата по оси Х
         private double y;       // координата по оси У
         private double Xstep;       // величина изменения по оси Х в кадр

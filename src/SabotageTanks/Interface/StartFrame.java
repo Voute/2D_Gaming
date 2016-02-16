@@ -84,7 +84,7 @@ public class StartFrame extends JFrame implements ActionListener
         portField.setText("5005");
         
         ipField = new JTextField();
-        ipField.setColumns(13);
+        ipField.setColumns(14);
         try {
             ipField.setText(Inet4Address.getLocalHost().getHostAddress());
         } catch (UnknownHostException ex) {
@@ -126,16 +126,21 @@ public class StartFrame extends JFrame implements ActionListener
         {
             ShowMessage.nameIsEmpty();
         }
-        else if (ip == ""   || ipField.getColumns() != ip.length())
+        else if (ip == "" 
+//                || 14 != ip.length()
+                )
         {
             ShowMessage.ipIsEmpty();
         }
         else 
         {
+            int intPort = Integer.getInteger(port, 5005);
+            
             if (serverRadio.isSelected())
             {
                 try {
-                    game = new GameServer(playerName, new ConnectionServer(Integer.getInteger(port)));
+                    ConnectionServer connectionServer = new ConnectionServer(intPort);
+                    game = new GameServer(playerName, connectionServer);
                 } catch (IOException ex) {
                     GameLog.write(ex);
                     ShowMessage.startingServerFail();
@@ -143,7 +148,8 @@ public class StartFrame extends JFrame implements ActionListener
             } else
             {
                 try {
-                    game = new GameClient(playerName, new ConnectionClient(ip, Integer.getInteger(port)));
+                    ConnectionClient connectionClient = new ConnectionClient(ip, intPort);
+                    game = new GameClient(playerName, connectionClient);
                 } catch (IOException ex) {
                     GameLog.write(ex);
                     ShowMessage.connectingServerFail();

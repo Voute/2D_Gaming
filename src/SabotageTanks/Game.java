@@ -6,19 +6,17 @@
 package SabotageTanks;
 
 import SabotageTanks.Control.GameControl;
-import SabotageTanks.Control.TankMovement;
 import SabotageTanks.GraphicObjects.GameObject;
-import SabotageTanks.GraphicObjects.Shell;
 import SabotageTanks.Net.Connection;
 import SabotageTanks.Interface.BattleField;
 import java.util.ArrayList;
 import SabotageTanks.GraphicObjects.Tank;
 import java.awt.Color;
-import java.util.List;
+import java.awt.Point;
 
 public abstract class Game implements Runnable
 {   
-    protected final StateServer gameState;
+    protected StateServer gameState;
     protected final StatePlayer playerState;
     protected final Player player;
     protected final Connection connection;
@@ -31,9 +29,6 @@ public abstract class Game implements Runnable
     private static final int HEIGHT = 600;      // высота игрового поля
 
     
-
-    
-    
     public Game(String playerName, Connection connection)
     {
         String title = ARTICLE + " - " + connection.getLocalIp() + ":" + connection.getLocalPort();
@@ -45,8 +40,7 @@ public abstract class Game implements Runnable
         battleField.addKeyListener(control.getKeyListener());      
         battleField.addMouseListener(control.getMouseListener());
         
-        Color playerColor = Player.TANK_COLORS[ (int)(Math.random()*7) ];
-        player = new Player(playerName, playerColor);
+        player = new Player(playerName, Player.getRandomColor());
         
         gameState = new StateServer();
         playerState = new StatePlayer();
@@ -111,7 +105,22 @@ public abstract class Game implements Runnable
     
     public Tank generatePlayerTank()
     {
-        playerState.tank = Tank.generate(player, this);
+        Tank newPlayerTank = null;
+        boolean possibleTank = false;
+        
+        if (playerState.tank != null)
+        {
+            gameState.getTanks().remove(playerState.tank);
+        }
+        
+        while (!possibleTank)
+        {
+            newPlayerTank = Tank.generate(player, this, playerState.shellList);
+            possibleTank = gameState.tankCanMove(newPlayerTank);
+        }
+
+        playerState.tank = newPlayerTank;
+        
         return playerState.tank;
     }
     
@@ -124,49 +133,54 @@ public abstract class Game implements Runnable
     {
         return HEIGHT;
     }
-    
-    public List<Shell> getShellList()
+    public Point getCursorPosition()
     {
-        return gameState.shellList;
+        return battleField.getCursorPosition();
     }
-    
-    public List<Shell> getPlayerShellList()
+    public double getPlayerSpeed()
     {
-        return playerState.shellList;
+        if (playerState.tank != null)
+        {
+            return playerState.tank.getSpeed();
+        } else
+        {
+            return 0.0d;
+        }
+    }
+    public int getShellsQuantity()
+    {
+        return gameState.getShells().size();
+    }
+    public int getPlayerX()
+    {
+        if (playerState.tank != null)
+        {
+            return playerState.tank.getX();
+        } else
+        {
+            return 0;
+        }
+    }
+    public int getPlayerY()
+    {
+        if (playerState.tank != null)
+        {
+            return playerState.tank.getY();
+        } else
+        {
+            return 0;
+        }
     }
     
     protected abstract void tick();
     protected abstract void sendState();
     protected abstract void receiveState();
     
-    protected boolean checkPlayerCanMove(Tank playerTank, TankMovement movement)
-    {
-        
-    }
-    
     // рисуем фрейм
     private void render()
     {
-        battleField.draw(gameState.getObjectsToDraw());
+        battleField.draw(gameState.getObjectsToDraw(), this);
     }
-    
-    public ArrayList<GameObject> getNearObjects(GameObject testingObject)
-    {
-        ArrayList<GameObject> returnArray = new ArrayList<>();
-        
-        for (Tank tank: battleField.getTanks())
-        {
-            if (tank != testingObject &&
-                Relations.areNear(testingObject, tank)
-                )
-            {
-                returnArray.add(tank);
-            }
-        }
-        
-        return returnArray;
-    }
-    
     
     private static class Relations
     {
