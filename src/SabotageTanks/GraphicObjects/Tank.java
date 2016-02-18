@@ -30,7 +30,7 @@ import java.util.List;
         public TankArea area;
         
         
-        private List<BurstPiece> burstPieces;
+        public List<BurstPiece> burstPieces;
         private int burstRenders;
         private static double speed = 1.5D;
         private final static double START_SPEED = 1.5D;
@@ -87,9 +87,17 @@ import java.util.List;
             XbarrelTip = getX() + (int)(radius * Xdelta / S);
             YbarrelTip = getY() + (int)(radius * Ydelta / S);
         }
-        public void setBursting()
+//        public void setX(double newX)
+//        {
+//            x = newX;
+//        }
+//        public void setY(double newY)
+//        {
+//            y = newY;
+//        }
+        public void setBursting(boolean bursting)
         {
-            bursting = true;
+            this.bursting = bursting;
         }
         public boolean getBursting()
         {
@@ -113,7 +121,7 @@ import java.util.List;
                 rotation += movement.rotationShift;
                 x += area.calculateXshift(rotation, movement.movementShift);
                 y += area.calculateYshift(rotation, movement.movementShift);
-                area.calculateNewLocation();
+                area.calculateNewLocation(getX(), getY());
 
                 calculateBarrel(movement.cursorX, movement.cursorY);
             } else
@@ -212,17 +220,21 @@ import java.util.List;
         }
         public void updateStats(Tank updatingTank)
         {
-            this.bursting = updatingTank.bursting;
-            this.XbarrelTip = updatingTank.XbarrelTip;
-            this.YbarrelTip = updatingTank.YbarrelTip;
-            this.x = updatingTank.x;
-            this.y = updatingTank.y;
-            this.rotation = updatingTank.rotation;
-            this.area = updatingTank.area;
-            this.color = updatingTank.color;
-            this.readyToReset = updatingTank.readyToReset;
-//            this.burstPieces = updatingTank.burstPieces;
-            this.burstRenders = updatingTank.burstRenders;
+//            this.bursting = updatingTank.bursting;
+            if (updatingTank.bursting)
+            {
+                this.bursting = true;
+            }
+            if (!bursting)
+            {
+                this.XbarrelTip = updatingTank.XbarrelTip;
+                this.YbarrelTip = updatingTank.YbarrelTip;
+                this.x = updatingTank.x;
+                this.y = updatingTank.y;
+                this.rotation = updatingTank.rotation;
+                this.area = updatingTank.area;        
+                this.color = updatingTank.color;
+            }
         }
         
         @Override
@@ -345,9 +357,9 @@ import java.util.List;
                     this.addPoint(point.x, point.y);
                 }
             }
-            void calculateNewLocation()
+            void calculateNewLocation(int x, int y)
             {
-                refreshPoints(getPoints(circumscribedRadius, rotation, getX(), getY()));
+                refreshPoints(getPoints(circumscribedRadius, rotation, x, y));
             }
             private Point[] getPoints(double areaRadius, double areaRotation, int Xcenter, int Ycenter)
             {

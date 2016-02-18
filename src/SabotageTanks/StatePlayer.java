@@ -24,5 +24,8 @@ public final class StatePlayer extends State {
     {
         shellList = Collections.synchronizedList(new ArrayList<Shell>());
     }
-    
+    public void updateTank(Tank updatingTank)
+    {
+        tank.setBursting(updatingTank.getBursting());
+    }
 }

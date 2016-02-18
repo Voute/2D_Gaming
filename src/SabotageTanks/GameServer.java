@@ -75,7 +75,7 @@ public class GameServer extends Game {
                        )
                     {
                         removeShellList.add(shell);
-                        tank.setBursting();
+                        tank.setBursting(true);
                         break;
                     }
                 }

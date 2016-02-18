@@ -55,7 +55,7 @@ public abstract class Game implements Runnable
     public void run()
     {
         long lastTime = System.nanoTime();      // время виртуальной машины (накапливаемая)
-        double nsPerFrame = 1000000000D/60D;        // сколько наносекунд на один кадр, если 60 кадров в секунду
+        double nsPerFrame = 1000000000D/50D;        // сколько наносекунд на один кадр, если 60 кадров в секунду
         long lastClockTime = System.currentTimeMillis();        // текущее время
         
         int frames = 0;     // количество отрисованных фреймов

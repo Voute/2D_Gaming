@@ -45,13 +45,17 @@ public class GameClient extends Game{
     protected void receiveState()
     {
         try {
-            gameState = (StateServer)connection.receiveState();
-            if (gameState != null && playerState.tank != null)
+            StateServer newGameState = (StateServer)connection.receiveState();
+            if (newGameState != null && playerState.tank != null)
             {
+                for (Tank updatedTank:newGameState.getTanks())
+                {
+                    gameState.updateTank(updatedTank);
+                }
                 Tank updatedTank = gameState.getTank(playerState.tank.getId());
                 if (updatedTank != null)
                 {
-                    playerState.tank.updateStats(updatedTank);               
+                    playerState.updateTank(updatedTank);               
                 }
             }
             
